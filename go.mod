@@ -1,4 +1,4 @@
-module github.com/jonmol/gphoto2
+module github.com/ZeroSpace-Studios/gphoto2
 
 go 1.14
 
