@@ -109,6 +109,134 @@ func NewCamera(name string) (*Camera, error) {
 	}
 	var gpCamera *C.Camera
 
+	if name != "" {
+		var cameraList *C.CameraList
+		var abilitiesList *C.CameraAbilitiesList
+		var portInfoList *C.GPPortInfoList
+		var abilities C.CameraAbilities
+		var portInfo C.GPPortInfo
+
+		if res := C.gp_list_new(&cameraList); res != GPOK {
+			return nil, newError("Cannot initialize camera list", int(res))
+		}
+
+		if res := C.gp_abilities_list_new(&abilitiesList); res != GPOK {
+			return nil, newError("Cannot initialize camera abilities list", int(res))
+		}
+
+		if res := C.gp_abilities_list_load(abilitiesList, ctx.gpContext); res != GPOK {
+			return nil, newError("Cannot load camera abilities list", int(res))
+		}
+
+		defer C.free(unsafe.Pointer(cameraList))
+		defer C.free(unsafe.Pointer(abilitiesList))
+
+		//Autodetect cameras
+		C.gp_camera_autodetect(cameraList, ctx.gpContext)
+
+		size := int(C.gp_list_count(cameraList))
+
+		if size < 0 {
+			return nil, newError("Cannot get camera list", size)
+		}
+
+		if size == 0 {
+			return nil, newError("Unable to detect cameras, Big Fail, Me Sad", size)
+		}
+		for i := 0; i < size; i++ {
+			var cKey *C.char
+			var cVal *C.char
+
+			C.gp_list_get_name(cameraList, C.int(i), &cKey)
+			C.gp_list_get_value(cameraList, 0, &cVal)
+			defer C.free(unsafe.Pointer(cKey))
+			defer C.free(unsafe.Pointer(cVal))
+
+			if name == C.GoString(cKey) {
+				if res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&gpCamera))); res != GPOK {
+					return nil, newError("Cannot initialize camera pointer", int(res))
+				} else if gpCamera == nil {
+					return nil, newError("Cannot initialize camera pointer", Error)
+				}
+
+				m := C.gp_abilities_list_lookup_model(abilitiesList, cKey)
+				if m != GPOK {
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot lookup camera model", int(m))
+				}
+
+				if res := C.gp_abilities_list_get_abilities(abilitiesList, m, &abilities); res != GPOK {
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot get camera abilities", int(res))
+				}
+
+				if res := C.gp_camera_set_abilities(gpCamera, abilities); res != GPOK {
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot set camera abilities", int(res))
+				}
+
+				if res := C.gp_port_info_list_new(&portInfoList); res != GPOK {
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot initialize port info list", int(res))
+				}
+
+				if res := C.gp_port_info_list_load(portInfoList); res != GPOK {
+					C.gp_port_info_list_free(portInfoList)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot load port info list", int(res))
+				}
+
+				p := C.gp_port_info_list_count(portInfoList)
+				switch p {
+				case C.GP_ERROR_UNKNOWN_PORT:
+					C.gp_port_info_list_free(portInfoList)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Unknown port", int(p))
+					break
+				default:
+					break
+				}
+
+				if (p != GPOK) && (p != 0) {
+					C.gp_port_info_list_free(portInfoList)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot get port info list", int(p))
+				}
+
+				if res := C.gp_port_info_list_get_info(portInfoList, p, &portInfo); res != GPOK {
+					C.gp_port_info_list_free(portInfoList)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot get port info", int(res))
+				}
+
+				if res := C.gp_camera_set_port_info(gpCamera, portInfo); res != GPOK {
+					C.gp_port_info_list_free(portInfoList)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("Cannot set port info", int(res))
+				}
+
+				if res := C.gp_camera_init(gpCamera, ctx.gpContext); res != GPOK {
+					C.gp_camera_exit(gpCamera, ctx.gpContext)
+					C.gp_camera_unref(gpCamera)
+					ctx.free()
+					return nil, newError("", int(res))
+				}
+
+				return &Camera{gpCamera: gpCamera, Ctx: ctx}, nil
+			}
+
+		}
+
+	}
 	if res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&gpCamera))); res != GPOK {
 		return nil, newError("Cannot initialize camera pointer", int(res))
 	} else if gpCamera == nil {
