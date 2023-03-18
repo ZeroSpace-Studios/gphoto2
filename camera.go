@@ -151,8 +151,8 @@ func ListCameras() (CameraList, error) {
 		defer C.free(unsafe.Pointer(cKey))
 		defer C.free(unsafe.Pointer(cVal))
 
-		st.names = append(st.names, C.GoString(cKey))
-		st.ports = append(st.ports, C.GoString(cVal))
+		st.Names = append(st.Names, C.GoString(cKey))
+		st.Ports = append(st.Ports, C.GoString(cVal))
 
 	}
 	return st, nil
