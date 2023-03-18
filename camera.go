@@ -40,8 +40,8 @@ type Camera struct {
 }
 
 type CameraList struct {
-	names []string
-	ports []string
+	Names []string
+	Ports []string
 }
 
 //Exit Closes a connection to the camera and therefore gives other application
