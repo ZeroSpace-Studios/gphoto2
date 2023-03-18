@@ -39,6 +39,11 @@ type Camera struct {
 	Settings *CameraWidget
 }
 
+type CameraList struct {
+	names []string
+	ports []string
+}
+
 //Exit Closes a connection to the camera and therefore gives other application
 //the possibility to access the camera, too. It is recommended that you call
 //this function when you currently don't need the camera. The camera will get
@@ -120,12 +125,12 @@ func NewCamera(name string) (*Camera, error) {
 	return &Camera{gpCamera: gpCamera, Ctx: ctx}, nil
 }
 
-func ListCameras() ([]string, error) {
+func ListCameras() (CameraList, error) {
 	ctx, err := NewContext()
 	if err != nil {
-		return nil, err
+		return CameraList{}, err
 	}
-	names := make([]string, 0)
+	st := CameraList{}
 	var cameraList *C.CameraList
 	C.gp_list_new(&cameraList)
 	C.gp_camera_autodetect(cameraList, ctx.gpContext)
@@ -134,17 +139,21 @@ func ListCameras() ([]string, error) {
 	size := int(C.gp_list_count(cameraList))
 
 	if size < 0 {
-		return nil, newError("Cannot get camera list", size)
+		return CameraList{}, newError("Cannot get camera list", size)
 	}
 
 	for i := 0; i < size; i++ {
 		var cKey *C.char
+		var cVal *C.char
 
 		C.gp_list_get_name(cameraList, C.int(i), &cKey)
+		C.gp_list_get_value(cameraList, 0, &cVal)
 		defer C.free(unsafe.Pointer(cKey))
+		defer C.free(unsafe.Pointer(cVal))
 
-		names = append(names, C.GoString(cKey))
+		st.names = append(st.names, C.GoString(cKey))
+		st.ports = append(st.ports, C.GoString(cVal))
 
 	}
-	return names, nil
+	return st, nil
 }
