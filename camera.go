@@ -23,7 +23,7 @@ package gphoto2
  * Boston, MA  02110-1301  USA
  */
 
-// #cgo LDFLAGS: -L/usr/lib/x86_64-linux-gnu -lgphoto2 -lgphoto2_port
+// #cgo LDFLAGS:  -lgphoto2 -lgphoto2_port
 // #cgo CFLAGS: -I/usr/include
 // #include <gphoto2/gphoto2.h>
 // #include <stdlib.h>
@@ -121,10 +121,14 @@ func NewCamera(name string) (*Camera, error) {
 }
 
 func ListCameras() ([]string, error) {
-	//ctx, err := NewContext()
+	ctx, err := NewContext()
+	if err != nil {
+		return nil, err
+	}
 	names := make([]string, 0)
 	var cameraList *C.CameraList
 	C.gp_list_new(&cameraList)
+	C.gp_camera_autodetect(cameraList, ctx)
 	defer C.free(unsafe.Pointer(cameraList))
 
 	size := int(C.gp_list_count(cameraList))
