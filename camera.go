@@ -128,7 +128,7 @@ func ListCameras() ([]string, error) {
 	names := make([]string, 0)
 	var cameraList *C.CameraList
 	C.gp_list_new(&cameraList)
-	C.gp_camera_autodetect(cameraList, ctx)
+	C.gp_camera_autodetect(cameraList, ctx.gpContext)
 	defer C.free(unsafe.Pointer(cameraList))
 
 	size := int(C.gp_list_count(cameraList))
