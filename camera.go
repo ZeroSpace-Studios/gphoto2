@@ -161,7 +161,7 @@ func NewCamera(name string) (*Camera, error) {
 
 				m := C.gp_abilities_list_lookup_model(abilitiesList, cKey)
 				println("m", m)
-				if m != GPOK {
+				if m < GPOK {
 					C.gp_camera_unref(gpCamera)
 					ctx.free()
 					return nil, newError("Cannot lookup camera model", int(m))
