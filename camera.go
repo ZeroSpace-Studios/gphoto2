@@ -153,13 +153,14 @@ func NewCamera(name string) (*Camera, error) {
 			defer C.free(unsafe.Pointer(cVal))
 
 			if name == C.GoString(cKey) {
+				println("Found camera: " + name)
 				if res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&gpCamera))); res != GPOK {
 					return nil, newError("Cannot initialize camera pointer", int(res))
 				} else if gpCamera == nil {
 					return nil, newError("Cannot initialize camera pointer", Error)
 				}
 
-				m := C.gp_abilities_list_lookup_model(abilitiesList, cKey)
+				m := C.gp_abilities_list_lookup_model(abilitiesList, &cKey)
 				if m != GPOK {
 					C.gp_camera_unref(gpCamera)
 					ctx.free()
