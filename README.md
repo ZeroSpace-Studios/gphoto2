@@ -1,6 +1,79 @@
 # gphoto2
 
-Partial Go bindings for http://www.gphoto.org/proj/libgphoto2/
+A Go library and control script for interfacing with DSLR cameras using the gphoto2 library.
+
+## Overview
+This project provides a comprehensive Go wrapper around the gphoto2 library, enabling programmatic control of DSLR cameras. It includes both a library for integration into other projects and standalone control scripts.
+
+## Features
+- Complete DSLR camera control
+- File transfer and management
+- Camera settings manipulation
+- Live preview support
+- Event handling
+- Extensive API coverage
+
+## Components
+- Camera control interface
+- File management
+- Settings manipulation
+- Widget handling
+- Callback system
+- Context management
+
+## Usage
+
+### Library Usage
+```go
+import "github.com/ZeroSpace-Studios/gphoto2"
+
+func main() {
+    ctx := gphoto2.NewContext()
+    defer ctx.Free()
+    
+    camera, err := gphoto2.NewCamera()
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer camera.Free()
+}
+```
+
+### Camera Operations
+```go
+// Capture photo
+camera.CaptureImage()
+
+// Download files
+camera.DownloadFile("path/to/file")
+
+// Adjust settings
+camera.SetConfig("shutterspeed", "1/1000")
+```
+
+## Project Structure
+```
+├── camera.go          # Core camera operations
+├── camera_file.go     # File handling
+├── camera_photo.go    # Photo operations
+├── camera_settings.go # Settings management
+├── camera_widget.go   # Widget interface
+├── callbacks.go       # Event system
+└── types.go          # Data structures
+```
+
+## Requirements
+- libgphoto2 installed
+- Go 1.13 or later
+- CGO enabled
+- Compatible DSLR camera
+
+## Examples
+Check the `examples/` directory for:
+- Basic camera control
+- File transfer
+- Settings adjustment
+- Event handling
 
 ## History
 
@@ -9,31 +82,6 @@ Much of the code is copied from and/or insipired of https://github.com/szank/gph
 ## Installlation
 
 To build the library you need to have libgphoto2-6 and libgphoto2-port12 or later installed.
-
-## Usage
-
-Under examples are there a couple of basic usage examples for setting shutter speed, taking a photo, entering live view and copying images from there. A very simple example of taking a shot would be:
-
-```Go
-func main() {
-	camera, err := gphoto2.NewCamera("")
-	if err != nil {
-		panic(fmt.Sprintf("%s: %s", "Failed to connect to camera, make sure it's around!", err))
-	}
-    snapFile := "/tmp/testshot.jpeg"
-	if f, err := os.Create(snapFile); err != nil {
-		fmt.Println("Failed to create temp file", snapFile, "giving up!", err)
-	} else {
-		fmt.Println("Taking shot, then copy to", snapFile)
-		if err := c.CaptureDownload(f, false); err != nil {
-			fmt.Println("Failed to capture!", err)
-		}
-	}
-	camera.Exit()
-	camera.Free()
-}
-```
-
 
 ## Notes
 
